@@ -60,6 +60,9 @@ electronContextMenu({
 });
 
 app.setAppUserModelId('com.sindresorhus.caprine');
+app.setAboutPanelOptions({
+	copyright: 'Copyright © Razi Syed',
+});
 
 if (!config.get('hardwareAcceleration')) {
 	app.disableHardwareAcceleration();

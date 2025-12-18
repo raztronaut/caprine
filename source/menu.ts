@@ -727,7 +727,7 @@ ${debugInfo()}`;
 			},
 			aboutMenuItem({
 				icon: caprineIconPath,
-				copyright: 'Created by Sindre Sorhus',
+				copyright: 'Created by Razi Syed',
 				text: 'Maintainers:\nDušan Simić\nLefteris Garyfalakis\nMichael Quevillon\nNikolas Spiridakis',
 				website: 'https://github.com/raztronaut/caprine',
 			}),
