@@ -21,6 +21,10 @@
 		<a href="https://github.com/raztronaut/caprine">
 		Website
 		</a>
+		<br>
+		<a href="changelog.md">
+		Changelog
+		</a>
 	<br>
 	<a href="https://github.com/raztronaut/caprine/releases/latest">
 		<img src="media/screenshot.png" width="846">
