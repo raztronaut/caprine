@@ -16,7 +16,7 @@ export function toggleMenuBarMode(window: BrowserWindow): void {
 
 	menuItem.checked = isEnabled;
 
-	window.setVisibleOnAllWorkspaces(isEnabled);
+	window.setVisibleOnAllWorkspaces(false);
 
 	if (isEnabled) {
 		globalShortcut.register(menuBarShortcut, () => {

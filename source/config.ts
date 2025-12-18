@@ -63,9 +63,7 @@ const schema: Store.Schema<StoreType> = {
 	vibrancy: {
 		type: 'string',
 		enum: ['none', 'sidebar', 'full'],
-		// TODO: Change the default to 'sidebar' when the vibrancy issue in Electron is fixed.
-		// See https://github.com/electron/electron/issues/10420
-		default: 'none',
+		default: 'sidebar',
 	},
 	zoomFactor: {
 		type: 'number',
@@ -164,7 +162,7 @@ const schema: Store.Schema<StoreType> = {
 	emojiStyle: {
 		type: 'string',
 		enum: ['native', 'facebook-3-0', 'messenger-1-0', 'facebook-2-2'],
-		default: 'facebook-3-0',
+		default: 'native',
 	},
 	useWorkChat: {
 		type: 'boolean',
@@ -225,12 +223,37 @@ function updateVibrancySetting(store: Store<StoreType>): void {
 
 	if (!is.macos || !vibrancy) {
 		store.set('vibrancy', 'none');
-	// @ts-expect-error
-	} else if (vibrancy === true) {
-		store.set('vibrancy', 'full');
-	// @ts-expect-error
-	} else if (vibrancy === false) {
-		store.set('vibrancy', 'sidebar');
+	} else {
+		// TODO: This can be removed in a future version.
+		// Migration for the `vibrancy` config.
+		switch (store.get('vibrancy') as any) {
+			case true: {
+				store.set('vibrancy', 'full');
+				break;
+			}
+
+			case false: {
+				store.set('vibrancy', 'sidebar');
+				break;
+			}
+
+			case 'sidebar':
+			case 'full': {
+				break;
+			}
+
+			case 'none': {
+				// 'none' is already handled by the `!vibrancy` check above,
+				// but keeping this case for completeness if the initial check changes.
+				break;
+			}
+
+			default: {
+				// Handle any unexpected values safely
+				store.set('vibrancy', 'sidebar');
+				break;
+			}
+		}
 	}
 }
 

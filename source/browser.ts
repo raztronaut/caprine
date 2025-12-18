@@ -20,24 +20,48 @@ async function withMenu(
 	// Click the menu button
 	menuButtonElement.click();
 
-	// Wait for the menu to close before removing the 'hide-dropdowns' class
-	await elementReady('.x78zum5.xdt5ytf.x1n2onr6.xat3117.xxzkxad > div:nth-child(2) > div', {stopOnDomReady: false});
-	const menuLayer = document.querySelector('.x78zum5.xdt5ytf.x1n2onr6.xat3117.xxzkxad > div:nth-child(2) > div');
-
-	if (menuLayer) {
-		const observer = new MutationObserver(() => {
-			if (!menuLayer.hasChildNodes()) {
-				classList.remove('hide-dropdowns');
-				observer.disconnect();
-			}
-		});
-		observer.observe(menuLayer, {childList: true});
-	} else {
-		// Fallback in case .uiContextualLayerPositioner is missing
+	// Function to cleanup - ensures we always remove the class
+	const cleanup = () => {
 		classList.remove('hide-dropdowns');
-	}
+	};
 
-	await callback();
+	try {
+		// Wait for the menu to close before removing the 'hide-dropdowns' class
+		// We use a generous timeout to ensure we don't block forever if the selector is invalid
+		const menuSelector = '[role="menu"], .uiContextualLayerPositioner';
+		const menuLayer = await elementReady(menuSelector, {
+			stopOnDomReady: false,
+			timeout: 2000, // Give up after 2 seconds if menu not found
+		});
+
+		if (menuLayer) {
+			const htmlMenuLayer = menuLayer as HTMLElement;
+			await new Promise<void>(resolve => {
+				const observer = new MutationObserver(() => {
+					if (!document.contains(htmlMenuLayer) || htmlMenuLayer.style.display === 'none' || htmlMenuLayer.offsetParent === null) {
+						observer.disconnect();
+						resolve();
+					}
+				});
+				observer.observe(document.body, {
+					childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'],
+				});
+
+				// Safety timeout for observation
+				setTimeout(() => {
+					observer.disconnect();
+					resolve();
+				}, 5000);
+			});
+		}
+	} catch (error) {
+		console.warn('Menu detection failed:', error);
+	} finally {
+		// ALWAYS remove the class
+		cleanup();
+		// Execute callback
+		await callback();
+	}
 }
 
 async function isNewSidebar(): Promise<boolean> {
@@ -230,12 +254,67 @@ async function openHiddenPreferences(): Promise<boolean> {
 	return false;
 }
 
+async function findToggleByLabel(labelText: string): Promise<HTMLInputElement | undefined> {
+	const preferences = await elementReady('[role="dialog"]', {stopOnDomReady: false, timeout: 5000});
+	if (!preferences) {
+		return undefined;
+	}
+
+	// Try to find the label by text content
+	// We handle case-insensitive partial match
+	const elements = preferences.querySelectorAll('span, label, div');
+	let targetLabel: HTMLElement | undefined;
+
+	for (const element of elements) {
+		if (element.textContent && element.textContent.toLowerCase().includes(labelText.toLowerCase()) // Ensure we picked the deepest matching element (leaf node preference)
+			&& (!targetLabel || (!element.contains(targetLabel)))) {
+			targetLabel = element as HTMLElement;
+		}
+	}
+
+	if (!targetLabel) {
+		return undefined;
+	}
+
+	// Once we have the label, find the associated toggle
+	// It's usually a sibling or inside a parent container
+	// Strategy: Go up to a row container, then look for a checkbox/switch
+
+	// 1. Try finding an input inside the label (if label wraps input)
+	const inputInside = targetLabel.querySelector('input');
+	if (inputInside) {
+		return inputInside;
+	}
+
+	// 2. Traverse up to find a common container, then look for input
+	// Heuristic: Go up max 3 levels
+	let parent = targetLabel.parentElement;
+	let attempts = 0;
+	while (parent && attempts < 3) {
+		const input = parent.querySelector('input[type="checkbox"], input[role="switch"]');
+		if (input) {
+			return input as HTMLInputElement;
+		}
+
+		parent = parent.parentElement;
+		attempts++;
+	}
+
+	return undefined;
+}
+
 async function toggleSounds({checked}: IToggleSounds): Promise<void> {
 	const shouldClosePreferences = await openHiddenPreferences();
 
-	const soundsCheckbox = document.querySelector<HTMLInputElement>(`${selectors.preferencesSelector} ${selectors.messengerSoundsSelector}`)!;
-	if (checked === undefined || checked !== soundsCheckbox.checked) {
-		soundsCheckbox.click();
+	// Search for "Message sounds" or "sounds"
+	const soundsCheckbox = await findToggleByLabel('sounds');
+
+	if (soundsCheckbox) {
+		if (checked === undefined || checked !== soundsCheckbox.checked) {
+			soundsCheckbox.click();
+		}
+	} else {
+		console.warn('Could not find sounds checkbox');
 	}
 
 	if (shouldClosePreferences) {
@@ -248,19 +327,29 @@ ipc.answerMain('toggle-sounds', toggleSounds);
 ipc.answerMain('toggle-mute-notifications', async () => {
 	const shouldClosePreferences = await openHiddenPreferences();
 
-	const notificationCheckbox = document.querySelector<HTMLInputElement>(
-		selectors.notificationCheckbox,
-	)!;
+	// Search for "Notification" or "Do not disturb" logic
+	// Note: "Mute notifications" usually is a toggle for "Show notifications" or similar?
+	// Or sometimes it's "Message previews".
+	// Based on original code logic which was `toggle-mute-notifications`,
+	// if we want to *mute*, we probably want to *disable* "Show notifications" or enable "Do not disturb".
+	// The original code returned `!notificationCheckbox.checked`.
+
+	// Let's assume the label is "Show notifications" or "Message notifications"
+	// If checked -> Notifications ON (Not Muted)
+	// If unchecked -> Notifications OFF (Muted)
+
+	const notificationCheckbox = await findToggleByLabel('notification');
 
 	if (shouldClosePreferences) {
 		await closePreferences();
 	}
 
-	// TODO: Fix notifications
-	if (notificationCheckbox === null) {
+	if (!notificationCheckbox) {
 		return false;
 	}
 
+	// If we are just reading status:
+	// If checked, Muted = false.
 	return !notificationCheckbox.checked;
 });
 
@@ -421,15 +510,6 @@ async function updateSidebar(): Promise<void> {
 		}
 
 		default:
-	}
-}
-
-// TODO: Implement this function
-async function updateDoNotDisturb(): Promise<void> {
-	const shouldClosePreferences = await openHiddenPreferences();
-
-	if (shouldClosePreferences) {
-		await closePreferences();
 	}
 }
 
@@ -717,10 +797,10 @@ async function observeAutoscroll(): Promise<void> {
 				const newMessages: MutationRecord[] = record.filter(record =>
 					// The mutation is an addition
 					record.addedNodes.length > 0
-						// ... of a div       (skip the "seen" status change)
-						&& (record.addedNodes[0] as HTMLElement).tagName === 'DIV'
-						// ... on the last child       (skip previous messages added when scrolling up)
-						&& chatElement.lastChild!.contains(record.target),
+					// ... of a div       (skip the "seen" status change)
+					&& (record.addedNodes[0] as HTMLElement).tagName === 'DIV'
+					// ... on the last child       (skip previous messages added when scrolling up)
+					&& chatElement.lastChild!.contains(record.target),
 				);
 
 				if (newMessages.length > 0) {
@@ -782,7 +862,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 	// Configure do not disturb
 	if (is.macos) {
-		await updateDoNotDisturb();
+		// Await updateDoNotDisturb(); // Disabled to prevent menu popup on startup
 	}
 
 	// Prevent flash of white on startup when in dark mode
@@ -878,7 +958,16 @@ window.addEventListener('message', async ({data: {type, data}}) => {
 function showNotification({id, title, body, icon, silent}: NotificationEvent): void {
 	const image = new Image();
 	image.crossOrigin = 'anonymous';
-	image.src = icon;
+
+	const send = (iconSource?: string) => {
+		ipc.callMain('notification', {
+			id,
+			title,
+			body,
+			icon: iconSource,
+			silent,
+		});
+	};
 
 	image.addEventListener('load', () => {
 		const canvas = document.createElement('canvas');
@@ -888,15 +977,22 @@ function showNotification({id, title, body, icon, silent}: NotificationEvent): v
 		canvas.height = image.height;
 
 		context.drawImage(image, 0, 0, image.width, image.height);
-
-		ipc.callMain('notification', {
-			id,
-			title,
-			body,
-			icon: canvas.toDataURL(),
-			silent,
-		});
+		send(canvas.toDataURL());
 	});
+
+	image.addEventListener('error', () => {
+		// Fallback if image fails
+		send(undefined);
+	});
+
+	// Timeout fallback
+	setTimeout(() => {
+		if (!image.complete || image.naturalWidth === 0) {
+			send(undefined);
+		}
+	}, 1000);
+
+	image.src = icon;
 }
 
 async function sendReply(message: string): Promise<void> {

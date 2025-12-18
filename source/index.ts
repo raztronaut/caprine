@@ -278,10 +278,9 @@ function createMainWindow(): BrowserWindow {
 		minHeight: 200,
 		alwaysOnTop: config.get('alwaysOnTop'),
 		titleBarStyle: 'hiddenInset',
-		trafficLightPosition: {
-			x: 80,
-			y: 20,
-		},
+		transparent: true,
+		backgroundColor: '#00000000',
+		vibrancy: 'sidebar', // Default visual state before config loads
 		autoHideMenuBar: config.get('autoHideMenuBar'),
 		webPreferences: {
 			preload: path.join(__dirname, 'browser.js'),
@@ -573,8 +572,10 @@ function createMainWindow(): BrowserWindow {
 
 if (is.macos) {
 	ipc.answerRenderer('set-vibrancy', () => {
-		mainWindow.setBackgroundColor('#80FFFFFF'); // Transparent, workaround for vibrancy issue.
-		mainWindow.setVibrancy('sidebar');
+		// Workaround for vibrancy issue.
+		if (is.macos) {
+			mainWindow.setVibrancy('sidebar');
+		}
 	});
 }
 

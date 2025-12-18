@@ -1,6 +1,5 @@
 import {ipcRenderer as ipc} from 'electron-better-ipc';
 import elementReady from 'element-ready';
-import {isNull} from 'lodash';
 import selectors from './selectors';
 
 const icon = {
@@ -104,40 +103,122 @@ async function getIcon(element: HTMLElement, unread: boolean): Promise<string> {
 	return element.getAttribute(unread ? icon.unread : icon.read)!;
 }
 
-async function getLabel(element: HTMLElement): Promise<string> {
-	if (isNull(element)) {
-		return '';
+function isUnread(element: HTMLElement): boolean {
+	// Primary check: "Mark as Read" button presence
+	const markAsReadButton = element.querySelector('[aria-label="Mark as read"]');
+	if (markAsReadButton) {
+		return true;
 	}
 
-	const emojis: HTMLElement[] = [];
-	if (element !== null) {
-		for (const elementCurrent of element.children) {
-			emojis.push(elementCurrent as HTMLElement);
+	// Secondary check: Bold text
+	// This covers cases where the button is hidden (responsive/maximized view)
+	// We look for any text container that has semi-bold/bold font weight
+	const candidates = element.querySelectorAll('span, div');
+	for (const candidate of candidates) {
+		// Optimization: Skip elements with children to focus on leaf/text nodes
+		if (candidate.childElementCount > 0) {
+			continue;
+		}
+
+		const {fontWeight} = getComputedStyle(candidate);
+		const weight = Number.parseInt(fontWeight, 10);
+		// 600 is usually semi-bold, 700 is bold. Facebook often uses 600 for unread text.
+		if (!Number.isNaN(weight) && weight >= 600) {
+			return true;
 		}
 	}
 
-	for (const emoji of emojis) {
-		emoji.outerHTML = emoji.querySelector('img')?.getAttribute('alt') ?? '';
+	return false;
+}
+
+function extractConversationInfo(element: HTMLElement): {title: string; body: string; icon: string | undefined} {
+	// Attempt to find the specific text structure
+	// Usually: Title is the first significant text, Body is the next one.
+	// We can try to rely on the container structure `[role="link"]` -> text containers
+
+	const link = element.querySelector('[role="link"]');
+	if (!link) {
+		return {title: '', body: '', icon: undefined};
 	}
 
-	return element.textContent ?? '';
+	// Icon
+	const iconImg = element.querySelector<HTMLImageElement>('img');
+	const icon = iconImg?.src ?? iconImg?.dataset?.caprineIcon;
+
+	// Text extraction strategy:
+	// 1. Get all text-containing elements within the link
+	// 2. Filter out timestamps or insignificant text if possible
+	// 3. Assume first is Title, second is Body
+
+	// Helper to get text from leaf nodes, ignoring visually hidden ones
+	const getTextNodes = (root: Element): string[] => {
+		const result: string[] = [];
+		const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+		let node;
+		while ((node = walker.nextNode())) {
+			const parent = node.parentElement;
+			// Skip visually hidden elements (common for "Unread message" sr-only text)
+			// Heuristic: check for specific accessibility hiding patterns
+			if (parent) {
+				const style = getComputedStyle(parent);
+				if (
+					style.display === 'none'
+					|| style.visibility === 'hidden'
+					|| style.opacity === '0'
+					// "sr-only" / "visually-hidden" patterns often use clip or very small size
+					|| (style.clip === 'rect(0px, 0px, 0px, 0px)' && style.position === 'absolute')
+					|| (style.width === '1px' && style.height === '1px' && style.overflow === 'hidden')
+				) {
+					continue;
+				}
+
+				// Explicitly skip "Unread message" label if it leaks through
+				if (node.textContent?.includes('Unread message')) {
+					continue;
+				}
+			}
+
+			const text = node.textContent?.trim();
+			if (text && text.length > 0) {
+				result.push(text);
+			}
+		}
+
+		return result;
+	};
+
+	// We look specifically at the text column, which is usually a sibling of the avatar
+	// But since we can't reliably pick the column by class, we just scan relevant text in the link
+	const texts = getTextNodes(link);
+
+	// Heuristic:
+	// - If we have >= 2 strings: Title, Body, (Time/Status...)
+	// - Often the Title is the user name.
+
+	if (texts.length >= 2) {
+		return {
+			title: texts[0],
+			body: texts[1], // Often the message preview
+			icon,
+		};
+	}
+
+	return {title: '', body: '', icon};
 }
 
 async function createConversationNewDesign(element: HTMLElement): Promise<Conversation> {
 	const conversation: Partial<Conversation> = {};
-	// TODO: Exclude muted conversations
-	/*
-	const muted = Boolean(element.querySelector(selectors.muteIconNewDesign));
-	*/
 
-	conversation.selected = Boolean(element.querySelector('[role=row] [role=link] > div:only-child'));
-	conversation.unread = Boolean(element.querySelector('[aria-label="Mark as Read"]'));
+	conversation.selected = Boolean(element.querySelector('[role=row] [role=link][aria-current="page"]'));
+	conversation.unread = isUnread(element);
 
-	const unparsedLabel = element.querySelector<HTMLElement>('.a8c37x1j.ni8dbmo4.stjgntxs.l9j0dhe7 > span > span')!;
-	conversation.label = await getLabel(unparsedLabel);
+	// Attempt to extract label (title)
+	const info = extractConversationInfo(element);
+	conversation.label = info.title;
 
-	const iconElement = element.querySelector<HTMLElement>('img')!;
-	conversation.icon = await getIcon(iconElement, conversation.unread);
+	// Icon
+	const iconElement = element.querySelector<HTMLElement>('img');
+	conversation.icon = await getIcon(iconElement!, conversation.unread);
 
 	return conversation as Conversation;
 }
@@ -156,10 +237,13 @@ async function createConversationList(): Promise<Conversation[]> {
 
 	const elements: HTMLElement[] = [...list.children] as HTMLElement[];
 
-	// Remove last element from childer list
-	elements.splice(-1, 1);
+	// Filter out non-conversation definitions (spinners, spacers, etc)
+	// We only want things that look like rows/conversations
+	const conversationElements = elements.filter(element => element.querySelector('[role="link"]'));
 
-	const conversations: Conversation[] = await Promise.all(elements.map(async element => createConversationNewDesign(element)));
+	const conversations: Conversation[] = await Promise.all(
+		conversationElements.map(async element => createConversationNewDesign(element)),
+	);
 
 	return conversations;
 }
@@ -169,93 +253,80 @@ export async function sendConversationList(): Promise<void> {
 	ipc.callMain('conversations', conversationsToRender);
 }
 
-function generateStringFromNode(element: Element): string | undefined {
-	const cloneElement = element.cloneNode(true) as Element;
-	let emojiString;
-
-	const images = cloneElement.querySelectorAll('img');
-	for (const image of images) {
-		emojiString = image.alt;
-		// Replace facebook's thumbs up with emoji
-		if (emojiString === '(Y)' || emojiString === '(y)') {
-			emojiString = '👍';
-		}
-
-		image.parentElement?.replaceWith(document.createTextNode(emojiString));
-	}
-
-	return cloneElement.textContent ?? undefined;
-}
+// Track the last text content we notified for each conversation href
+const knownUnreadMessages = new Map<string, string>();
 
 function countUnread(mutationsList: MutationRecord[]): void {
-	const alreadyChecked: string[] = [];
+	const processedHrefs = new Set<string>();
 
-	const unreadMutations = mutationsList.filter(mutation =>
-		// When a conversations "becomes unread".
-		(
-			mutation.type === 'childList'
-			&& mutation.addedNodes.length > 0
-			&& ((mutation.addedNodes[0] as Element).className === selectors.conversationSidebarUnreadDot)
-		)
-		// When text is received
-		|| (
-			mutation.type === 'characterData'
-			// Make sure the text corresponds to a conversation
-			&& mutation.target.parentElement?.parentElement?.parentElement?.className === selectors.conversationSidebarTextParent
-		)
-		// When an emoji is received, node(s) are added
-		|| (
-			mutation.type === 'childList'
-			// Make sure the mutation corresponds to a conversation
-			&& mutation.target.parentElement?.parentElement?.className === selectors.conversationSidebarTextParent
-		)
-		// Emoji change
-		|| (
-			mutation.type === 'attributes'
-			&& mutation.target.parentElement?.parentElement?.parentElement?.parentElement?.className === selectors.conversationSidebarTextParent
-		));
+	for (const mutation of mutationsList) {
+		const target = mutation.target as HTMLElement;
+		// Find the conversation row container
+		// We look for the gridcell or row role which usually wraps the conversation
+		const conversationRow = target.closest('[role="row"], [role="gridcell"]')?.closest('div[role="none"], div[class="x1n2onr6"]') ?? target.closest('[role="link"]')?.parentElement;
 
-	// Check latest mutation first
-	for (const mutation of unreadMutations.reverse()) {
-		const current = (mutation.target.parentElement as Element).closest(selectors.conversationSidebarSelector)!;
-
-		const href = current.closest('[role="link"]')?.getAttribute('href');
-
-		if (!href) {
+		if (!conversationRow) {
 			continue;
 		}
 
-		// It is possible to have multiple mutations for the same conversation, but we only want one notification.
-		// So if the current conversation has already been checked, continue.
-		// Additionally if the conversation is not unread, then also continue.
-		if (alreadyChecked.includes(href) || !current.querySelector('.' + selectors.conversationSidebarUnreadDot.replaceAll(/ /, '.'))) {
+		// Ensure we are looking at a conversation list item
+		const link = conversationRow.querySelector('[role="link"]');
+		if (!link) {
 			continue;
 		}
 
-		alreadyChecked.push(href);
-
-		// Get the image data URI from the parent of the author/text
-		const imgUrl = current.querySelector('img')?.dataset.caprineIcon;
-		const textOptions = current.querySelectorAll(selectors.conversationSidebarTextSelector);
-		// Get the author and text of the new message
-		const titleTextNode = textOptions[0];
-		const bodyTextNode = textOptions[1];
-
-		const titleText = generateStringFromNode(titleTextNode);
-		const bodyText = generateStringFromNode(bodyTextNode);
-
-		if (!bodyText || !titleText || !imgUrl) {
+		const href = link.getAttribute('href');
+		if (!href || processedHrefs.has(href)) {
 			continue;
 		}
 
-		// Send a notification
+		processedHrefs.add(href);
+
+		// 1. If conversation is READ, clear from our known map so we can notify again later
+		if (!isUnread(conversationRow as HTMLElement)) {
+			knownUnreadMessages.delete(href);
+			continue;
+		}
+
+		// 2. If conversation is UNREAD, check if we need to notify
+
+		const info = extractConversationInfo(conversationRow as HTMLElement);
+
+		// If we don't have enough info, skip
+		if (!info.title || !info.body) {
+			continue;
+		}
+
+		// Explicitly skip "self" messages
+		// If the preview starts with "You:", it's a message we sent, not an unread one from others.
+		// (Even if isUnread() triggered due to bolding artifacts).
+		if (info.body.startsWith('You:')) {
+			continue;
+		}
+
+		// Construct a unique signature for this message state
+		// We use body text as the primary differentiator.
+		// If the user sends multiple "Hi" messages, this might dedupe them incorrectly adjacent,
+		// but given mutation frequency, it's better than infinite loops.
+		// Including title helps if multiple people send same text? (Though href is unique per thread).
+		const messageSignature = info.body;
+
+		// If we already notified for this exact content in this thread, skip
+		if (knownUnreadMessages.get(href) === messageSignature) {
+			continue;
+		}
+
+		// Send notification
 		ipc.callMain('notification', {
 			id: 0,
-			title: titleText,
-			body: bodyText,
-			icon: imgUrl,
+			title: info.title,
+			body: info.body,
+			icon: info.icon,
 			silent: false,
 		});
+
+		// Update state
+		knownUnreadMessages.set(href, messageSignature);
 	}
 }
 
@@ -289,7 +360,7 @@ window.addEventListener('load', async () => {
 			subtree: true,
 			childList: true,
 			attributes: true,
-			attributeFilter: ['class'],
+			attributeFilter: ['class', 'aria-current'], // Relevant for selection changes
 		});
 
 		conversationCountObserver.observe(sidebar, {
@@ -297,7 +368,7 @@ window.addEventListener('load', async () => {
 			subtree: true,
 			childList: true,
 			attributes: true,
-			attributeFilter: ['src', 'alt'],
+			// We observe class/style changes for bold check, and structural changes for buttons
 		});
 	}
 
