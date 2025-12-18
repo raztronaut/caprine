@@ -56,177 +56,21 @@ Download the latest version on the [website](https://github.com/raztronaut/capri
 
 [**Download**](https://github.com/raztronaut/caprine/releases/latest) the `.dmg` file.
 
-Or with [Homebrew](https://brew.sh): `$ brew install caprine`
+[**Download**](https://github.com/raztronaut/caprine/releases/latest) the `.dmg` file.
+
+> **Note**: Homebrew support is currently pending. Please download the `.dmg` manually for now.
 
 ### Linux
 
-<table>
-	<th>Distribution</th>
-	<th>Repository</th>
-	<th>Automatic Updates</th>
-	<th>Maintainer</th>
-	<th>How to install</th>
-	<tr>
-		<td>Arch Linux</td>
-		<td>Community</td>
-		<td align="center">✔️</td>
-		<td>Frederik Schwan</td>
-		<td><code>pacman -S caprine</code></td>
-	</tr>
-	<tr>
-		<td>Debian / Ubuntu (manually)</td>
-		<td>GitHub</td>
-		<td align="center">❌</td>
-		<td>Official</td>
-		<td>
-			<a href="https://github.com/sindresorhus/caprine/releases/latest">Download</a> the .deb file
-		</td>
-	</tr>
-	<tr>
-		<td>Debian / Ubuntu (deb-get)</td>
-		<td>GitHub</td>
-		<td align="center">✔️</td>
-		<td>Official</td>
-		<td>
-			Follow the <a href=#installation-using-deb-get>instructions below</a>
-		</td>
-	</tr>
-	<tr>
-		<td>Debian / Ubuntu (APT)</td>
-		<td>Gemfury</td>
-		<td align="center">✔️</td>
-		<td>Lefteris Garyfalakis</td>
-		<td>
-			Follow the <a href=#apt-repository-gemfury>instructions below</a>
-		</td>
-	</tr>
-	<tr>
-		<td>RHEL / Fedora / openSUSE</td>
-		<td>Copr</td>
-		<td align="center">✔️</td>
-		<td>Dušan Simić</td>
-		<td>
-			Follow the <a href=#copr>instructions below</a>
-		</td>
-	</tr>
-	<tr>
-		<td>AppImage</td>
-		<td>GitHub</td>
-		<td align="center">✔️</td>
-		<td>Official</td>
-		<td>
-			Follow the <a href=#appimage>instructions below</a>
-		</td>
-	</tr>
-	<tr>
-		<td>Flatpak</td>
-		<td>Flathub</td>
-		<td align="center">✔️</td>
-		<td>Dušan Simić</td>
-		<td>
-			Visit <a href="https://flathub.org/apps/details/com.sindresorhus.Caprine">Flathub</a> and follow the instructions
-		</td>
-	</tr>
-	<tr>
-		<td>Snap</td>
-		<td>Snapcraft</td>
-		<td align="center">✔️</td>
-		<td>Official</td>
-		<td>
-			Visit <a href="https://snapcraft.io/caprine">Snapcraft</a> and follow the instructions
-		</td>
-	</tr>
-</table>
+[**Download**](https://github.com/raztronaut/caprine/releases/latest) the `.AppImage` or `.deb` file.
 
-#### Installation using deb-get:
-
-* Download and install [deb-get](https://github.com/wimpysworld/deb-get).
-* Run `deb-get install caprine`.
-
-Note: deb-get is 3rd party software, not to be associated with apt-get.
-
-#### APT repository (Gemfury):
-
-Run the following command to add it:
-
-```sh
-wget -q -O- https://raw.githubusercontent.com/sindresorhus/caprine/main/packages/deb/addRepo.sh | sudo bash
-```
-
-Alternatively (for advanced users):
-```sh
-# Add the repository
-echo "deb [trusted=yes] https://apt.fury.io/lefterisgar/ * *" > \
-/etc/apt/sources.list.d/caprine.list
-
-# Update the package indexes
-sudo apt update
-
-# Install Caprine
-sudo apt install caprine
-```
-
-
-#### Copr:
-
-For Fedora / RHEL:
-
-```sh
-sudo dnf copr enable dusansimic/caprine
-sudo dnf install caprine
-```
-
-For openSUSE:
-- Create a new file in `/etc/zypp/repos.d/caprine.repo`.
-- Copy the contents of [this file](https://copr.fedorainfracloud.org/coprs/dusansimic/caprine/repo/opensuse-tumbleweed/dusansimic-caprine-opensuse-tumbleweed.repo) and paste them into the file you just created.
-
-Alternatively use the following one-liner:
-```sh
-curl -s https://copr.fedorainfracloud.org/coprs/dusansimic/caprine/repo/opensuse-tumbleweed/dusansimic-caprine-opensuse-tumbleweed.repo | sudo tee /etc/zypp/repos.d/caprine.repo
-```
-
-#### AppImage:
-
-[Download](https://github.com/sindresorhus/caprine/releases/latest) the `.AppImage` file.
-
-Make it [executable](https://discourse.appimage.org/t/how-to-run-an-appimage/80):
-
-```sh
-chmod +x Caprine-2.xx.x.AppImage
-```
-
-Then run it!
-
-#### About immutable Linux distributions:
-[Fedora Silverblue](https://silverblue.fedoraproject.org), [Fedora Kinoite](https://kinoite.fedoraproject.org), [EndlessOS](https://endlessos.com), [CarbonOS](https://carbon.sh) and other immutable distributions only support Flatpak and/or AppImage.*
-
-*Note: On some distributions Flatpak must be [pre-configured manually](https://flatpak.org/setup).*
+> **Note**: Snap, Flatpak, and Apt repositories are currently pointing to the original repository. Please download the binary manually for now.
 
 ### Windows
 
-<table>
-	<th>Method</th>
-	<th>Repository</th>
-	<th>Automatic Updates</th>
-	<th>Maintainer</th>
-	<th>How to install</th>
-	<tr>
-		<td>Manually</td>
-		<td>GitHub</td>
-		<td align="center">❌</td>
-		<td>Official</td>
-		<td>
-			<a href="https://github.com/sindresorhus/caprine/releases/latest">Download</a> the .exe file
-		</td>
-	</tr>
-	<tr>
-		<td>Chocolatey</td>
-		<td>Community</td>
-		<td align="center">✔️</td>
-		<td>Michael Quevillon</td>
-		<td><code>choco install caprine</code></td>
-	</tr>
-</table>
+[**Download**](https://github.com/raztronaut/caprine/releases/latest) the `.exe` file.
+
+> **Note**: Chocolatey support is currently pending. Please download the `.exe` manually for now.
 
 *For taskbar notification badges to work on Windows 10, you'll need to [enable them in Taskbar Settings](https://www.tenforums.com/tutorials/48186-taskbar-buttons-hide-show-badges-windows-10-a.html).*
 
@@ -401,15 +245,16 @@ Then edit the automatically created GitHub Releases draft and publish.
 
 ## Maintainers
 
-- [Raztronaut](https://github.com/raztronaut)
+- [Razi Syed](https://github.com/raztronaut)
+
+**Former**
+
+- [Jarek Radosz](https://github.com/CvX)
 - [Dušan Simić](https://github.com/dusansimic)
 - [Lefteris Garyfalakis](https://github.com/lefterisgar)
 - [Michael Quevillon](https://github.com/mquevill)
 - [Nikolas Spiridakis](https://github.com/1nikolas)
 
-**Former**
-
-- [Jarek Radosz](https://github.com/CvX)
 
 ## Links
 
