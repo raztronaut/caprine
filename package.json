@@ -4,12 +4,9 @@
 	"version": "2.60.3",
 	"description": "Elegant Facebook Messenger desktop app",
 	"license": "MIT",
-	"repository": "sindresorhus/caprine",
-	"author": {
-		"name": "Sindre Sorhus",
-		"email": "sindresorhus@gmail.com",
-		"url": "https://sindresorhus.com"
-	},
+	"repository": "raztronaut/caprine",
+	"author": "Razi Syed",
+	"email": "syed.raziulhaque@gmail.com",
 	"main": "dist-js",
 	"engines": {
 		"node": ">=16"

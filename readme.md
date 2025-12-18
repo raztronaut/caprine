@@ -1,7 +1,8 @@
 <div align="center">
 	<br>
+	<h3>Maintained Fork by @raztronaut</h3>
 	<br>
-	<a href="https://github.com/sindresorhus/caprine">
+	<a href="https://github.com/raztronaut/caprine">
 		<img src="media/AppIcon-readme.png" width="200" height="200">
 	</a>
 	<h1>Caprine</h1>
@@ -17,11 +18,11 @@
 		Caprine is feature complete. However, we welcome contributions for improvements and bug fixes.
 	</b>
 	<br>
-		<a href="https://github.com/sindresorhus/caprine">
+		<a href="https://github.com/raztronaut/caprine">
 		Website
 		</a>
 	<br>
-	<a href="https://github.com/sindresorhus/caprine/releases/latest">
+	<a href="https://github.com/raztronaut/caprine/releases/latest">
 		<img src="media/screenshot.png" width="846">
 	</a>
 </div>
@@ -49,11 +50,11 @@
 
 *macOS 10.12+ (Intel and Apple Silicon), Linux (x64 and arm64), and Windows 10+ (64-bit) are supported.*
 
-Download the latest version on the [website](https://github.com/sindresorhus/caprine) or below.
+Download the latest version on the [website](https://github.com/raztronaut/caprine) or below.
 
 ### macOS
 
-[**Download**](https://github.com/sindresorhus/caprine/releases/latest) the `.dmg` file.
+[**Download**](https://github.com/raztronaut/caprine/releases/latest) the `.dmg` file.
 
 Or with [Homebrew](https://brew.sh): `$ brew install caprine`
 
@@ -400,6 +401,7 @@ Then edit the automatically created GitHub Releases draft and publish.
 
 ## Maintainers
 
+- [Raztronaut](https://github.com/raztronaut)
 - [Dušan Simić](https://github.com/dusansimic)
 - [Lefteris Garyfalakis](https://github.com/lefterisgar)
 - [Michael Quevillon](https://github.com/mquevill)
