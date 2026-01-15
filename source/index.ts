@@ -1,5 +1,6 @@
 import path from 'node:path';
 import {readFileSync, existsSync} from 'node:fs';
+import {readFile} from 'node:fs/promises';
 import {
 	app,
 	nativeImage,
@@ -438,19 +439,28 @@ function createMainWindow(): BrowserWindow {
 		await updateAppMenu();
 
 		const files = ['browser.css', 'dark-mode.css', 'vibrancy.css', 'code-blocks.css', 'autoplay.css', 'scrollbar.css'];
-
 		const cssPath = path.join(__dirname, '..', 'css');
+		const filesToLoad = config.get('useWorkChat') ? [...files, 'workchat.css'] : files;
 
-		for (const file of files) {
-			if (existsSync(path.join(cssPath, file))) {
-				webContents.insertCSS(readFileSync(path.join(cssPath, file), 'utf8'));
+		const cssPromises = filesToLoad.map(async file => {
+			try {
+				return await readFile(path.join(cssPath, file), 'utf8');
+			} catch (error: unknown) {
+				const {code} = error as {code: string};
+				if (code !== 'ENOENT') {
+					console.error('Error reading CSS file', error);
+				}
+
+				return null;
 			}
-		}
+		});
 
-		if (config.get('useWorkChat') && existsSync(path.join(cssPath, 'workchat.css'))) {
-			webContents.insertCSS(
-				readFileSync(path.join(cssPath, 'workchat.css'), 'utf8'),
-			);
+		const cssContents = await Promise.all(cssPromises);
+
+		for (const content of cssContents) {
+			if (content) {
+				webContents.insertCSS(content);
+			}
 		}
 
 		if (existsSync(path.join(app.getPath('userData'), 'custom.css'))) {
