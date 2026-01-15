@@ -431,12 +431,9 @@ Press Command/Ctrl+R in Caprine to see your changes.
 			},
 		},
 		{
-			// TODO: Fix notifications.
-			// ESTABLISHED FIX: This relies on the main process `notification` event.
-			// Since we fixed the notification triggers in `source/browser/conversation-list.ts`, this should work downstream.
 			label: 'Flash Window on Message',
 			type: 'checkbox',
-			visible: is.development,
+			visible: !is.macos,
 			checked: config.get('flashWindowOnMessage'),
 			click(menuItem) {
 				config.set('flashWindowOnMessage', menuItem.checked);
