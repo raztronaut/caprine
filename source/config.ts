@@ -218,45 +218,6 @@ const schema: Store.Schema<StoreType> = {
 	},
 };
 
-function updateVibrancySetting(store: Store<StoreType>): void {
-	const vibrancy = store.get('vibrancy');
-
-	if (!is.macos || !vibrancy) {
-		store.set('vibrancy', 'none');
-	} else {
-		// TODO: This can be removed in a future version.
-		// Migration for the `vibrancy` config.
-		switch (store.get('vibrancy') as any) {
-			case true: {
-				store.set('vibrancy', 'full');
-				break;
-			}
-
-			case false: {
-				store.set('vibrancy', 'sidebar');
-				break;
-			}
-
-			case 'sidebar':
-			case 'full': {
-				break;
-			}
-
-			case 'none': {
-				// 'none' is already handled by the `!vibrancy` check above,
-				// but keeping this case for completeness if the initial check changes.
-				break;
-			}
-
-			default: {
-				// Handle any unexpected values safely
-				store.set('vibrancy', 'sidebar');
-				break;
-			}
-		}
-	}
-}
-
 function updateSidebarSetting(store: Store<StoreType>): void {
 	if (store.get('sidebarHidden')) {
 		store.set('sidebar', 'hidden');
@@ -291,7 +252,6 @@ function updateThemeSetting(store: Store<StoreType>): void {
 }
 
 function migrate(store: Store<StoreType>): void {
-	updateVibrancySetting(store);
 	updateSidebarSetting(store);
 	updateThemeSetting(store);
 }
