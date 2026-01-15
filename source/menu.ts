@@ -282,12 +282,8 @@ Press Command/Ctrl+R in Caprine to see your changes.
 			},
 		},
 		{
-			// TODO: Fix notifications.
-			// ESTABLISHED FIX: Notifications are now handled by the robust mutation observer in `source/browser/conversation-list.ts`.
-			// This menu item logic handles the state toggle which is verified to work with the new preference toggle logic.
 			label: 'Show Notifications',
 			type: 'checkbox',
-			visible: is.development,
 			checked: !config.get('notificationsMuted'),
 			click(menuItem) {
 				config.set('notificationsMuted', !menuItem.checked);
@@ -417,7 +413,8 @@ Press Command/Ctrl+R in Caprine to see your changes.
 					dialog.showMessageBox({
 						type: 'info',
 						message: 'Press the Alt key to toggle the menu bar.',
-						buttons: ['OK'],
+						buttons: [
+							'OK'],
 					});
 				}
 			},
