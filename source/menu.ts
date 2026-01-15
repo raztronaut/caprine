@@ -315,16 +315,11 @@ Press Command/Ctrl+R in Caprine to see your changes.
 			},
 		},
 		{
-			// TODO: Fix notification badge.
-			// ESTABLISHED FIX: Tray icon updates are handled by `updateTrayIcon` in `source/browser/conversation-list.ts`.
-			// This toggle controls the config state.
 			label: 'Show Unread Badge',
 			type: 'checkbox',
-			visible: is.development,
 			checked: config.get('showUnreadBadge'),
 			click(menuItem) {
 				config.set('showUnreadBadge', menuItem.checked);
-				sendAction('reload');
 			},
 		},
 		{
