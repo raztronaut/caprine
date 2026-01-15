@@ -1,6 +1,7 @@
 import {ipcRenderer as ipc} from 'electron-better-ipc';
 import elementReady from 'element-ready';
 import selectors from './selectors';
+import config from '../config';
 
 const icon = {
 	read: 'data-caprine-icon',
@@ -257,6 +258,11 @@ export async function sendConversationList(): Promise<void> {
 const knownUnreadMessages = new Map<string, string>();
 
 function countUnread(mutationsList: MutationRecord[]): void {
+	// Check if notifications are muted
+	if (config.get('notificationsMuted')) {
+		return;
+	}
+
 	const processedHrefs = new Set<string>();
 
 	for (const mutation of mutationsList) {
