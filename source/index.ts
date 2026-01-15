@@ -85,6 +85,8 @@ let previousMessageCount = 0;
 let dockMenu: Menu;
 let isDNDEnabled = false;
 
+const callPopups = new Set<BrowserWindow>();
+
 if (!app.requestSingleInstanceLock()) {
 	app.quit();
 }
@@ -104,6 +106,17 @@ app.on('ready', () => {
 	electronScreen.on('display-removed', () => {
 		const [x, y] = mainWindow.getPosition();
 		mainWindow.setPosition(x, y);
+	});
+
+	session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+		const isCallPopup = callPopups.has(BrowserWindow.fromWebContents(webContents)!);
+		const isMainWindow = webContents.id === mainWindow.webContents.id;
+
+		if (permission === 'media' && (isCallPopup || isMainWindow)) {
+			callback(true);
+		} else {
+			callback(false);
+		}
 	});
 });
 
@@ -528,6 +541,36 @@ function createMainWindow(): BrowserWindow {
 		}
 
 		return {action: 'allow'};
+	});
+
+	webContents.on('did-create-window', (window, details) => {
+		if ((details.url === 'about:blank' || details.url === 'about:blank#blocked') && details.frameName !== 'about:blank') {
+			// Voice/video call popup
+			callPopups.add(window);
+
+			// Workaround for https://github.com/electron/electron/issues/25593
+			window.webContents.on('media-started-playing', () => {
+				window.webContents.executeJavaScript(`
+					navigator.mediaDevices.getUserMedia({video: true, audio: true})
+						.then(stream => {
+							window.stream = stream;
+						});
+				`, true);
+			});
+
+			window.on('close', () => {
+				// Stop media stream
+				window.webContents.executeJavaScript(`
+					if (window.stream) {
+						for (const track of window.stream.getTracks()) {
+							track.stop();
+						}
+					}
+				`);
+
+				callPopups.delete(window);
+			});
+		}
 	});
 
 	webContents.on('will-navigate', async (event, url) => {
