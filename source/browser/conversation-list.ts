@@ -113,14 +113,16 @@ function isUnread(element: HTMLElement): boolean {
 	// Secondary check: Bold text
 	// This covers cases where the button is hidden (responsive/maximized view)
 	// We look for any text container that has semi-bold/bold font weight
-	const candidates = element.querySelectorAll('span, div');
-	for (const candidate of candidates) {
-		// Optimization: Skip elements with children to focus on leaf/text nodes
-		if (candidate.childElementCount > 0) {
+	const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+	let node: Node | undefined;
+
+	while ((node = walker.nextNode()!)) {
+		const parent = node.parentElement;
+		if (!parent) {
 			continue;
 		}
 
-		const {fontWeight} = getComputedStyle(candidate);
+		const {fontWeight} = getComputedStyle(parent);
 		const weight = Number.parseInt(fontWeight, 10);
 		// 600 is usually semi-bold, 700 is bold. Facebook often uses 600 for unread text.
 		if (!Number.isNaN(weight) && weight >= 600) {
