@@ -82,6 +82,7 @@ if (!is.development && config.get('autoUpdate')) {
 let mainWindow: BrowserWindow;
 let isQuitting = false;
 let previousMessageCount = 0;
+let currentMessageCount = 0;
 let dockMenu: Menu;
 let isDNDEnabled = false;
 
@@ -424,7 +425,12 @@ function createMainWindow(): BrowserWindow {
 
 	// Update badge on conversations change
 	ipc.answerRenderer('update-tray-icon', async (messageCount: number) => {
+		currentMessageCount = messageCount;
 		updateBadge(messageCount);
+	});
+
+	config.onDidChange('showUnreadBadge', () => {
+		updateBadge(currentMessageCount);
 	});
 
 	enableHiresResources();
@@ -629,6 +635,10 @@ ipc.answerRenderer(
 		// Don't send notifications when the window is focused
 		if (mainWindow.isFocused()) {
 			return;
+		}
+
+		if (!is.macos && config.get('flashWindowOnMessage')) {
+			mainWindow.flashFrame(true);
 		}
 
 		const notification = new Notification({
