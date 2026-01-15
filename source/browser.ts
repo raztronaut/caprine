@@ -65,8 +65,7 @@ async function withMenu(
 }
 
 async function isNewSidebar(): Promise<boolean> {
-	// TODO: stopOnDomReady might not be needed
-	await elementReady(selectors.leftSidebar, {stopOnDomReady: false});
+	await elementReady(selectors.leftSidebar);
 
 	const sidebars = document.querySelectorAll<HTMLElement>(selectors.leftSidebar);
 
