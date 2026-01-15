@@ -52,3 +52,11 @@ Alternatively, use `npm ci` if you want to strictly follow the lockfile without 
 - **TypeScript**: Always use TypeScript for source changes. Avoid `any` where possible.
 - **Electron API**: Be mindful of the differences between main and renderer processes.
 - **Messenger Updates**: Since Caprine wraps the Messenger web app, changes to Messenger's DOM can break things. Use `element-ready` for robust selector handling.
+
+## Testing Jules PRs Locally
+
+Users will verify your changes by checking out your PR branch and running the app:
+1. `gh pr checkout <pr-number>`
+2. `npm install && npm start`
+
+Ensure your changes don't prevent the app from starting or cause silent failures in the DevTools console.
