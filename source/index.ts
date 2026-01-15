@@ -45,18 +45,30 @@ electronDebug({
 
 electronDl();
 electronContextMenu({
-	showCopyImageAddress: true,
-	prepend(defaultActions) {
-		/*
-		TODO: Use menu option or use replacement of options (https://github.com/sindresorhus/electron-context-menu/issues/70)
-		See explanation for this hacky solution here: https://github.com/sindresorhus/caprine/pull/1169
-		*/
-		defaultActions.copyLink({
+	menu: (actions, _params, _browserWindow, dictionarySuggestions) => [
+		...dictionarySuggestions,
+		actions.separator(),
+		actions.learnSpelling({}),
+		actions.separator(),
+		actions.lookUpSelection({}),
+		actions.separator(),
+		actions.searchWithGoogle({}),
+		actions.separator(),
+		actions.cut({}),
+		actions.copy({}),
+		actions.paste({}),
+		...(is.macos ? [] : [actions.selectAll({})]),
+		actions.separator(),
+		actions.saveImageAs({}),
+		actions.copyImage({}),
+		actions.copyImageAddress({}),
+		actions.separator(),
+		actions.copyLink({
 			transform: stripTrackingFromUrl,
-		});
-
-		return [];
-	},
+		}),
+		actions.separator(),
+		...(is.development ? [actions.inspect()] : []),
+	],
 });
 
 app.setAppUserModelId('com.sindresorhus.caprine');
