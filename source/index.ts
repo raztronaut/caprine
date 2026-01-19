@@ -631,6 +631,10 @@ ipc.answerRenderer(
 			return;
 		}
 
+		if (!is.macos && config.get('flashWindowOnMessage')) {
+			mainWindow.flashFrame(true);
+		}
+
 		const notification = new Notification({
 			title,
 			body: config.get('notificationMessagePreview') ? body : 'You have a new message',
