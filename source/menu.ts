@@ -270,40 +270,20 @@ Press Command/Ctrl+R in Caprine to see your changes.
 			},
 		},
 		{
-			// TODO: Fix notifications.
-			// ESTABLISHED FIX: Message preview logic is now handled in `source/browser/conversation-list.ts`.
-			// The content extraction logic there respects this setting.
 			label: 'Show Message Preview in Notifications',
 			type: 'checkbox',
-			visible: is.development,
 			checked: config.get('notificationMessagePreview'),
 			click(menuItem) {
 				config.set('notificationMessagePreview', menuItem.checked);
 			},
 		},
 		{
-			// TODO: Fix notifications.
-			// ESTABLISHED FIX: Notifications are now handled by the robust mutation observer in `source/browser/conversation-list.ts`.
-			// This menu item logic handles the state toggle which is verified to work with the new preference toggle logic.
 			label: 'Show Notifications',
 			type: 'checkbox',
-			visible: is.development,
 			checked: !config.get('notificationsMuted'),
 			click(menuItem) {
 				config.set('notificationsMuted', !menuItem.checked);
 				sendAction('toggle-mute-notifications');
-			},
-		},
-		{
-			// TODO: Fix notifications.
-			// ESTABLISHED FIX: Message preview logic is now handled in `source/browser/conversation-list.ts` with `extractConversationInfo`.
-			// This toggle controls the config state which the new logic respects.
-			label: 'Show Message Preview',
-			type: 'checkbox',
-			visible: is.development,
-			checked: config.get('notificationMessagePreview'),
-			click(menuItem) {
-				config.set('notificationMessagePreview', menuItem.checked);
 			},
 		},
 		{
@@ -315,12 +295,8 @@ Press Command/Ctrl+R in Caprine to see your changes.
 			},
 		},
 		{
-			// TODO: Fix notification badge.
-			// ESTABLISHED FIX: Tray icon updates are handled by `updateTrayIcon` in `source/browser/conversation-list.ts`.
-			// This toggle controls the config state.
 			label: 'Show Unread Badge',
 			type: 'checkbox',
-			visible: is.development,
 			checked: config.get('showUnreadBadge'),
 			click(menuItem) {
 				config.set('showUnreadBadge', menuItem.checked);
@@ -431,12 +407,8 @@ Press Command/Ctrl+R in Caprine to see your changes.
 			},
 		},
 		{
-			// TODO: Fix notifications.
-			// ESTABLISHED FIX: This relies on the main process `notification` event.
-			// Since we fixed the notification triggers in `source/browser/conversation-list.ts`, this should work downstream.
 			label: 'Flash Window on Message',
 			type: 'checkbox',
-			visible: is.development,
 			checked: config.get('flashWindowOnMessage'),
 			click(menuItem) {
 				config.set('flashWindowOnMessage', menuItem.checked);
